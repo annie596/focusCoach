@@ -14,85 +14,125 @@ Framer.Defaults.Animation =
 # Set up views to access them later
 Overlay = sketch.overlay
 Add = sketch.add
-FocusNow = sketch.focusNow
-FocusMode = sketch.focusMode 
+FocusNow = sketch.FocusNow
+ScheduleNew = sketch.ScheduleNew
+
 Timer = sketch.timer
 StartCircle = sketch.start
-# print FocusNow
+Exit = sketch.exit
+Appframe = sketch.appFrame
+Appbar = sketch.appBar
+Appbar_CreateNew = sketch.appBar_createNew
+IconBar = sketch.iconBar
+
+FocusMode = sketch.focusMode 
+Checkoff = sketch.checkoff
+Schedule = sketch.schedule
+Visualization = sketch.visualization
+CreateNewForm = sketch.textInput_createNew
+
+BtnOkay = sketch.okay
+
+iconTaskList = sketch.icon_taskList
+iconViz = sketch.icon_viz
+iconIndicator = sketch.icon_indicator
+iconSchedule = sketch.icon_schedule
+
+# iconIndicator.opacity = 0
+# print Schedule
 
 #set up initial state
+Appframe.z = 500
+Appbar.z = 100
+
+# print ScheduleNew.subLayers
+
+mainView = [Schedule, Checkoff, Overlay,Visualization, CreateNewForm]
+for i in mainView
+    i.x = 0
+    i.y = 225
+    i.opacity = 0
+
+Switch = [Add, Overlay, Schedule, Checkoff, FocusMode, Visualization, CreateNewForm, IconBar, Appbar_CreateNew]
+for j in Switch
+    j.states.add({
+    		close: {visible : false},
+    		open: {visible : true, opacity: 1},
+	})
+
+Schedule.opacity = 1
+
+Appbar_CreateNew.x = 0
+Appbar_CreateNew.y = 0
+Appbar_CreateNew.opacity = 0
 
 FocusMode.x = 0
 FocusMode.y = 0
-FocusMode.z= 5
-FocusMode.visible = true
-FocusMode.opacity = 1
+FocusMode.z = 5
+FocusMode.opacity = 0
 
 Timer.draggable.enabled = true
 Timer.draggable.speedY = 0
-
 
 Add.z = 1
 Add.states.add({
-    initial: {rotation:0},
     open: {rotation:45},
-})
-Overlay.opacity = 0
-Overlay.states.add({
-    initial: {opacity:0},
-    open: {opacity:1},
+    initial: {rotation:0},
 })
 
+# Global Nav 
+# ================
+globalIcon = [iconViz, iconTaskList, iconSchedule]
+for icon in globalIcon
+	icon.states.add({
+		active: {opacity:1},
+		inactive: {opacity: 0.3},
+	})
+iconViz.states.switch("inactive")
+iconTaskList.states.switch("inactive")
 
+# Interaction flow
+# ================
+
+mainview = new Layer width: 1080, height: 1550, y: 225
+mainview.states.add({
+	viz: {opacity:1},
+	inactive: {opacity: 0.3},
+})
+	
 # Add new focus time
 Add.on Events.Click, ->
-	Overlay.animate({
-    		properties: {opacity: 1}
-	})
-	Overlay.states.next(["open","initial"])
+	Overlay.states.next(["open","close"])
 	Add.states.next(["open","initial"])
-	
+
 # Focus Now
 FocusNow.on Events.Click, ->
-	FocusMode.animate({
-	    properties: {opacity: 1}
-	})
-	#print Overlay.subLayers 
+	FocusMode.states.switch("open")
+	Add.states.switch("close")
+	
+# Schedule New
+ScheduleNew.on Events.Click, ->
+	Add.states.switch("close")
+	Overlay.states.switch("close")
+	Schedule.states.switch("close")
+	CreateNewForm.states.switch("open")
+	Appbar_CreateNew.states.switch("open")
+	IconBar.states.switch("close")
+	
 
-# Make the layer draggable, but prevent dragging up and down
+# Exit focus mode
+Exit.on Events.Click, ->
+	Overlay.states.switch("close")
+	FocusMode.states.switch("close")
+	Schedule.states.switch("close")
+	Checkoff.states.switch("open")
+	
+#checkoff
+BtnOkay.on Events.Click, ->
+	Checkoff.states.switch("close")
+	Visualization.states.switch("open")
+	
+
+# Make the timer draggable, but prevent dragging up and down
 Timer.draggable.enabled = true
 Timer.draggable.speedY = 0
-
-# Set the thresholds to cross and show them with lines
-leftThreshold = 60
-rightThreshold = Screen.width * 2 - leftThreshold
-leftLine = new Layer width: 1, x: leftThreshold, y: 80, height: 140, backgroundColor: "#000"
-rightLine = new Layer width: 1, x: rightThreshold, y: 80, height: 140, backgroundColor: "#000"
-
-# Add states for left and right, and set the curve
-Timer.states.add
-	left: {x: 230}
-	right: {x: screen.width  - Timer.width}
-	start: {x: 230}
-Timer.states.switchInstant("left")
-Timer.states.animationOptions = 
-  curve: "spring(200, 20, 10)"
-
-# When dragging ends, save the direction it was heading as a variable (via calculateVelocity), stored as strings that match the state names. Then set a boolean variable to true if it has crossed a threshold based on its starting state. If it has crossed a threshold and is still going that direction, switch the state to send it the rest of the way; otherwise, send it back.
-Timer.draggable.on Events.DragEnd, ->
-  velocityDirection = if Timer.draggable.calculateVelocity().x < 0 then "left" else "right"
-  thresholdBroken = if Timer.states.current is "left" and Timer.x > leftThreshold then true else false
-  thresholdBroken = if Timer.states.current is "right" and Timer.maxX < rightThreshold then true else thresholdBroken
-  if thresholdBroken and velocityDirection isnt Timer.states.current
-    Timer.states.switch(velocityDirection)
-  else
-    Timer.states.switch(Timer.states.current)
-		
-
-	
-
-	
-	
-
-
-
